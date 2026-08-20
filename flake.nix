@@ -56,6 +56,8 @@
 
           packages.default = config.packages.buildgomodule;
 
+          checks = config.packages;
+
           devShells.default = pkgs.mkShellNoCC {
             packages = with pkgs; [
               gnumake
