@@ -7,11 +7,23 @@
 
 {
   goreleaserArgs ? [ "--single-target" ],
+  gitUserName ? "nix",
+  gitUserEmail ? "nix@goreleaser2nix",
+  gitCommitMessage ? "nix build",
+  gitTag ? null,
+  gitCommitDate ? null,
   ...
 }@args:
 
 buildGoModule (
-  (builtins.removeAttrs args [ "goreleaserArgs" ])
+  (builtins.removeAttrs args [
+    "goreleaserArgs"
+    "gitUserName"
+    "gitUserEmail"
+    "gitCommitMessage"
+    "gitTag"
+    "gitCommitDate"
+  ])
   // {
     nativeBuildInputs = (args.nativeBuildInputs or [ ]) ++ [
       goreleaser
@@ -25,10 +37,17 @@ buildGoModule (
 
       export HOME="$TMPDIR"
       git init -q .
-      git config user.email "nix@goreleaser2nix"
-      git config user.name "nix"
+      git config user.email ${lib.escapeShellArg gitUserEmail}
+      git config user.name ${lib.escapeShellArg gitUserName}
+      ${lib.optionalString (gitCommitDate != null) ''
+        export GIT_AUTHOR_DATE=${lib.escapeShellArg gitCommitDate}
+        export GIT_COMMITTER_DATE=${lib.escapeShellArg gitCommitDate}
+      ''}
       git add -A
-      git commit -q -m "nix build"
+      git commit -q -m ${lib.escapeShellArg gitCommitMessage}
+      ${lib.optionalString (gitTag != null) ''
+        git tag ${lib.escapeShellArg gitTag}
+      ''}
 
       goreleaser build --clean --snapshot ${lib.escapeShellArgs goreleaserArgs}
 
