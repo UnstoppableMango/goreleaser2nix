@@ -1,6 +1,7 @@
 {
   lib,
   buildGoModule,
+  buildGoApplication ? null,
   goreleaser,
   gitMinimal,
 }:
@@ -13,10 +14,25 @@
   gitTag ? null,
   gitCommitDate ? null,
   dotGitDir ? null,
+  useGomod2nix ? false,
+  modules ? null,
   ...
 }@args:
 
 let
+  builder =
+    if useGomod2nix then
+      (
+        if buildGoApplication == null then
+          throw "mkGoreleaserBuild: useGomod2nix = true requires buildGoApplication (apply the gomod2nix overlay before this one)"
+        else
+          buildGoApplication
+      )
+    else
+      buildGoModule;
+
+  extraBuilderArgs = lib.optionalAttrs useGomod2nix { inherit modules; };
+
   gitSetup =
     if dotGitDir != null then
       ''
@@ -39,7 +55,7 @@ let
         ''}
       '';
 in
-buildGoModule (
+builder (
   (builtins.removeAttrs args [
     "goreleaserArgs"
     "gitUserName"
@@ -48,7 +64,10 @@ buildGoModule (
     "gitTag"
     "gitCommitDate"
     "dotGitDir"
+    "useGomod2nix"
+    "modules"
   ])
+  // extraBuilderArgs
   // {
     nativeBuildInputs = (args.nativeBuildInputs or [ ]) ++ [
       goreleaser
