@@ -22,12 +22,27 @@
       systems = import inputs.systems;
       imports = [ inputs.treefmt-nix.flakeModule ];
 
+      flake.overlays.default = final: prev: {
+        mkGoreleaserBuild = final.callPackage ./nix/goreleaser-build.nix { };
+      };
+
       perSystem =
         { pkgs, ... }:
+        let
+          pkgs' = pkgs.extend inputs.self.overlays.default;
+        in
         {
+          packages.default = pkgs'.mkGoreleaserBuild {
+            pname = "example";
+            version = "0.0.0";
+            src = ./example;
+            vendorHash = null;
+          };
+
           devShells.default = pkgs.mkShellNoCC {
             packages = with pkgs; [
               gnumake
+              goreleaser
               nixfmt
             ];
           };
