@@ -1,0 +1,7 @@
+version: 2
+builds:
+  - id: example
+    binary: example
+    main: .
+    env:
+      - CGO_ENABLED=0
